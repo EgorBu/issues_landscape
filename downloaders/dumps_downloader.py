@@ -32,28 +32,28 @@ def extract_archive_links(url: str) -> [str]:
 
 def process_archives(archive_links: [str], target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
-    for archive_link in tqdm(archive_links):
+    for archive_link in tqdm(desc="process archives", iterable=archive_links, total=len(archive_links)):
+        if not archive_link.endswith("tar.gz"):
+            continue
         tar_filename = os.path.basename(archive_link)
         target_loc = os.path.join(target_dir, tar_filename)
 
-        print("downloading %s file" % tar_filename)
-        with tqdm() as p_bar:
+        with tqdm(desc="downloading %s" % tar_filename) as p_bar:
             urllib.request.urlretrieve(archive_link, filename=target_loc,
                                        reporthook=download_progress_hook(p_bar))
+
         unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
         untar(target_loc, unique_dump_dir)
         remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
 
 
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> None:
-    if tarfile_path.endswith("tar.gz"):
-        print("extracting %s file" % tarfile_path)
-        tar = tarfile.open(tarfile_path, "r:gz")
-        os.makedirs(target_directory, exist_ok=True)
-        tar.extractall(target_directory)
-        tar.close()
-        if remove_tarfile:
-            os.remove(tarfile_path)
+    os.makedirs(target_directory, exist_ok=True)
+    with tarfile.open(tarfile_path, "r:gz") as tar:
+        for member in tqdm(desc="extracting %s" % tarfile_path, iterable=tar.getmembers(), total=len(tar.getmembers())):
+            tar.extract(path=target_directory, member=member)
+    if remove_tarfile:
+        os.remove(tarfile_path)
 
 
 def remove_excess_files(directory: str) -> None:
