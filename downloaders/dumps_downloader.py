@@ -4,16 +4,19 @@ import os
 
 import urllib.request
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
-def show_file_progress(block_num, block_size, total_size):
-    downloaded = block_num * block_size
-    if total_size > 0:
-        percent = downloaded * 1e2 / total_size
-        s = "\r%5.1f%% %*d / %d bytes" % (percent, len(str(total_size)), downloaded, total_size)
-        sys.stderr.write(s)
-        if downloaded >= total_size:
-            sys.stderr.write("\n")
+def download_progress_hook(p_bar: tqdm):
+    last_block = [0]
+
+    def update_to(block_num: int = 1, block_size: int = 1, total_size: int = None):
+        if total_size not in (None, -1):
+            p_bar.total = total_size
+        p_bar.update((block_num - last_block[0]) * block_size)
+        last_block[0] = block_num
+
+    return update_to
 
 
 def get_tar_files_links_from_html(url):
@@ -34,8 +37,9 @@ def extract_tar_files_to_directory(tar_files_links, target_dir):
         full_tar_filename = target_dir + '/' + tar_filename
 
         print("downloading %s file" % tar_filename)
-        urllib.request.urlretrieve(tar_file_link, full_tar_filename, show_file_progress)
-
+        with tqdm() as p_bar:
+            urllib.request.urlretrieve(tar_file_link, filename=full_tar_filename,
+                                       reporthook=download_progress_hook(p_bar))
         unique_dump_dir = target_dir + '/' + tar_filename.replace('.tar.gz', '')
         extract_tar_to_directory(full_tar_filename, unique_dump_dir, True)
         remove_excess_files(unique_dump_dir + '/dump/github')
