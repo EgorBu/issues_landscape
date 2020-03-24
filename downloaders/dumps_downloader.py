@@ -28,7 +28,7 @@ def get_tar_files_links_from_html(url):
 
 
 def extract_tar_files_to_directory(tar_files_links, target_dir):
-    create_directory_if_not_exists(target_dir)
+    os.makedirs(target_dir, exist_ok=True)
     for tar_file_link in tar_files_links:
         tar_filename = os.path.basename(tar_file_link)
         full_tar_filename = target_dir + '/' + tar_filename
@@ -45,7 +45,7 @@ def extract_tar_to_directory(tarfile_path, target_directory, need_remove_tarfile
     if tarfile_path.endswith('tar.gz'):
         print("extracting %s file" % tarfile_path)
         tar = tarfile.open(tarfile_path, 'r:gz')
-        create_directory_if_not_exists(target_directory)
+        os.makedirs(target_directory, exist_ok=True)
         tar.extractall(target_directory)
         tar.close()
         if need_remove_tarfile:
@@ -58,11 +58,6 @@ def remove_excess_files(directory):
     for cur_bson_file in bson_files:
         if cur_bson_file not in issue_connected_files:
             os.remove(directory + "/" + cur_bson_file)
-
-
-def create_directory_if_not_exists(dir_path):
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
 
 
 def main():
