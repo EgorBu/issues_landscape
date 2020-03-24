@@ -1,16 +1,16 @@
 import tarfile
-import sys
 import os
+from typing import Optional
 
 import urllib.request
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 
-def download_progress_hook(p_bar: tqdm):
+def download_progress_hook(p_bar: tqdm) -> (int, int, Optional[int]):
     last_block = [0]
 
-    def update_to(block_num: int = 1, block_size: int = 1, total_size: int = None):
+    def update_to(block_num: int = 1, block_size: int = 1, total_size: Optional[int] = None) -> None:
         if total_size not in (None, -1):
             p_bar.total = total_size
         p_bar.update((block_num - last_block[0]) * block_size)
@@ -19,7 +19,7 @@ def download_progress_hook(p_bar: tqdm):
     return update_to
 
 
-def get_tar_files_links_from_html(url):
+def get_tar_files_links_from_html(url: str) -> [str]:
     html_page = urllib.request.urlopen(url)
     soup = BeautifulSoup(html_page, features='html.parser')
     tar_files_links = []
@@ -30,7 +30,7 @@ def get_tar_files_links_from_html(url):
     return tar_files_links
 
 
-def extract_tar_files_to_directory(tar_files_links, target_dir):
+def extract_tar_files_to_directory(tar_files_links: [str], target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
     for tar_file_link in tar_files_links:
         tar_filename = os.path.basename(tar_file_link)
@@ -45,7 +45,7 @@ def extract_tar_files_to_directory(tar_files_links, target_dir):
         remove_excess_files(unique_dump_dir + '/dump/github')
 
 
-def extract_tar_to_directory(tarfile_path, target_directory, need_remove_tarfile):
+def extract_tar_to_directory(tarfile_path: str, target_directory: str, need_remove_tarfile: bool) -> None:
     if tarfile_path.endswith('tar.gz'):
         print("extracting %s file" % tarfile_path)
         tar = tarfile.open(tarfile_path, 'r:gz')
@@ -56,7 +56,7 @@ def extract_tar_to_directory(tarfile_path, target_directory, need_remove_tarfile
             os.remove(tarfile_path)
 
 
-def remove_excess_files(directory):
+def remove_excess_files(directory: str) -> None:
     issue_connected_files = ['issues.bson', 'issue_comments.bson']
     bson_files = os.listdir(directory)
     for cur_bson_file in bson_files:
