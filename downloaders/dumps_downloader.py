@@ -34,15 +34,15 @@ def process_archives(archive_links: [str], target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
     for archive_link in tqdm(archive_links):
         tar_filename = os.path.basename(archive_link)
-        target_loc = target_dir + "/" + tar_filename
+        target_loc = os.path.join(target_dir, tar_filename)
 
         print("downloading %s file" % tar_filename)
         with tqdm() as p_bar:
             urllib.request.urlretrieve(archive_link, filename=target_loc,
                                        reporthook=download_progress_hook(p_bar))
-        unique_dump_dir = target_dir + "/" + tar_filename.replace(".tar.gz", "")
+        unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
         untar(target_loc, unique_dump_dir)
-        remove_excess_files(unique_dump_dir + "/dump/github")
+        remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
 
 
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> None:
@@ -61,7 +61,7 @@ def remove_excess_files(directory: str) -> None:
     bson_files = os.listdir(directory)
     for file in bson_files:
         if file not in issue_related_files:
-            os.remove(directory + "/" + file)
+            os.remove(os.path.join(directory, file))
 
 
 def main():
