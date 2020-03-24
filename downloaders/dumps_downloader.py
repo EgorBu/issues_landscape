@@ -1,7 +1,8 @@
-import urllib.request
 import tarfile
 import sys
 import os
+
+import urllib.request
 from bs4 import BeautifulSoup
 
 
