@@ -19,7 +19,7 @@ def download_progress_hook(p_bar: tqdm) -> (int, int, Optional[int]):
     return update_to
 
 
-def get_tar_files_links_from_html(url: str) -> [str]:
+def extract_archive_links(url: str) -> [str]:
     html_page = urllib.request.urlopen(url)
     soup = BeautifulSoup(html_page, features='html.parser')
     tar_files_links = []
@@ -30,46 +30,46 @@ def get_tar_files_links_from_html(url: str) -> [str]:
     return tar_files_links
 
 
-def extract_tar_files_to_directory(tar_files_links: [str], target_dir: str) -> None:
+def process_archives(archive_links: [str], target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
-    for tar_file_link in tar_files_links:
-        tar_filename = os.path.basename(tar_file_link)
-        full_tar_filename = target_dir + '/' + tar_filename
+    for archive_link in tqdm(archive_links):
+        tar_filename = os.path.basename(archive_link)
+        target_loc = target_dir + '/' + tar_filename
 
         print("downloading %s file" % tar_filename)
         with tqdm() as p_bar:
-            urllib.request.urlretrieve(tar_file_link, filename=full_tar_filename,
+            urllib.request.urlretrieve(archive_link, filename=target_loc,
                                        reporthook=download_progress_hook(p_bar))
         unique_dump_dir = target_dir + '/' + tar_filename.replace('.tar.gz', '')
-        extract_tar_to_directory(full_tar_filename, unique_dump_dir, True)
+        untar(target_loc, unique_dump_dir)
         remove_excess_files(unique_dump_dir + '/dump/github')
 
 
-def extract_tar_to_directory(tarfile_path: str, target_directory: str, need_remove_tarfile: bool) -> None:
+def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> None:
     if tarfile_path.endswith('tar.gz'):
         print("extracting %s file" % tarfile_path)
         tar = tarfile.open(tarfile_path, 'r:gz')
         os.makedirs(target_directory, exist_ok=True)
         tar.extractall(target_directory)
         tar.close()
-        if need_remove_tarfile:
+        if remove_tarfile:
             os.remove(tarfile_path)
 
 
 def remove_excess_files(directory: str) -> None:
-    issue_connected_files = ['issues.bson', 'issue_comments.bson']
+    issue_related_files = {'issues.bson', 'issue_comments.bson'}
     bson_files = os.listdir(directory)
-    for cur_bson_file in bson_files:
-        if cur_bson_file not in issue_connected_files:
-            os.remove(directory + "/" + cur_bson_file)
+    for file in bson_files:
+        if file not in issue_related_files:
+            os.remove(directory + "/" + file)
 
 
 def main():
     url = "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/"
-    tar_files_links = get_tar_files_links_from_html(url)
+    tar_files_links = extract_archive_links(url)
 
     download_target_dir = os.path.abspath(os.getcwd()) + '/data'
-    extract_tar_files_to_directory(tar_files_links, download_target_dir)
+    process_archives(tar_files_links, download_target_dir)
 
 
 if __name__ == '__main__':
