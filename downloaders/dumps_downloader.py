@@ -1,5 +1,6 @@
 import tarfile
 import os
+import argparse
 from typing import Optional
 
 import urllib.request
@@ -68,11 +69,14 @@ def remove_excess_files(directory: str) -> None:
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--target-dir", required=True,
+                        help="Directory to store downloaded tar files")
+    args = parser.parse_args()
     url = "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/"
     tar_files_links = extract_archive_links(url)
 
-    download_target_dir = os.path.abspath(os.getcwd()) + "/data"
-    process_archives(tar_files_links, download_target_dir)
+    process_archives(tar_files_links, args.target_dir)
 
 
 if __name__ == "__main__":
