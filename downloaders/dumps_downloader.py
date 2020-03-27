@@ -46,18 +46,23 @@ def process_archives(archive_links: [str], target_dir: str) -> None:
                                        reporthook=download_progress_hook(p_bar))
 
         unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
-        untar(target_loc, unique_dump_dir)
-        remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
+        is_successful_untar = untar(target_loc, unique_dump_dir)
+        if is_successful_untar:
+            remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
 
 
-def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> None:
+def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> bool:
     os.makedirs(target_directory, exist_ok=True)
     with tarfile.open(tarfile_path, "r:gz") as tar:
-        for member in tqdm(desc="extracting %s" % tarfile_path, iterable=tar.getmembers(),
-                           total=len(tar.getmembers())):
-            tar.extract(path=target_directory, member=member)
+        try:
+            for member in tqdm(desc="extracting %s" % tarfile_path, iterable=tar.getmembers(),
+                               total=len(tar.getmembers())):
+                tar.extract(path=target_directory, member=member)
+        except EOFError:
+            return False
     if remove_tarfile:
         os.remove(tarfile_path)
+    return True
 
 
 def remove_excess_files(directory: str) -> None:
