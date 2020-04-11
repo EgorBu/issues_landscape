@@ -5,14 +5,14 @@ Download Github issues daily dumps from this page
 import argparse
 import os
 import tarfile
-from typing import Optional
+from typing import List, Callable, Optional
 
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import urllib.request
 
 
-def download_progress_hook(p_bar: tqdm) -> (int, int, Optional[int]):
+def download_progress_hook(p_bar: tqdm) -> Callable[[int, int, Optional[int]], None]:
     """
     Wraps tqdm instance
     :param p_bar: tqdm instance responible for showing download progress
@@ -37,7 +37,7 @@ def download_progress_hook(p_bar: tqdm) -> (int, int, Optional[int]):
     return update_to
 
 
-def extract_archive_links(url: str) -> [str]:
+def extract_archive_links(url: str) -> List[str]:
     """
     Extract tar files links from GHTorrent html page to list
     :param url: url of page with daily dumps tars
@@ -53,7 +53,7 @@ def extract_archive_links(url: str) -> [str]:
     return tar_files_links
 
 
-def process_archives(archive_links: [str], target_dir: str) -> None:
+def process_archives(archive_links: List[str], target_dir: str) -> None:
     """
     Download tar files and untar them to target directory
     :param archive_links: list of tar files links
