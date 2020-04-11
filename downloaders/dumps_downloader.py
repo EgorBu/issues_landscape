@@ -2,14 +2,14 @@
 Download Github issues daily dumps from this page
 "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/" and store them into target directory.
 """
-import tarfile
-import os
 import argparse
+import os
+import tarfile
 from typing import Optional
 
-import urllib.request
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import urllib.request
 
 
 def download_progress_hook(p_bar: tqdm) -> (int, int, Optional[int]):
