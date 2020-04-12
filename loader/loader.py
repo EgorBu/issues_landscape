@@ -125,7 +125,3 @@ def main() -> None:
     tar_files_links = extract_archive_links(url)
 
     process_archives(tar_files_links, args.target_dir)
-
-
-if __name__ == "__main__":
-    main()
