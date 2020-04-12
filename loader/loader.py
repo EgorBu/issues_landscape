@@ -76,6 +76,7 @@ def process_archives(archive_links: List[str], target_dir: str) -> None:
         is_successful_untar = untar(target_loc, unique_dump_dir)
         if is_successful_untar:
             remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
+            tar_directory(unique_dump_dir, os.path.join(target_dir, tar_filename))
 
 
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> bool:
@@ -97,6 +98,22 @@ def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True)
     if remove_tarfile:
         os.remove(tarfile_path)
     return True
+
+
+def tar_directory(dir_path: str, tarfile_path: str, remove_directory: bool = True) -> None:
+    """
+    Tar directory to specific path
+    :param dir_path: path to directory
+    :param tarfile_path: path to created tarfile
+    :param remove_directory: True if necessary to remove tarred directory, otherwise - False
+    :return: None
+    """
+    with tarfile.open(tarfile_path, "w:gz") as tar:
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                tar.add(os.path.join(root, file))
+    if remove_directory:
+        os.system("rm -rf %s" % dir_path)
 
 
 def remove_excess_files(directory: str) -> None:
