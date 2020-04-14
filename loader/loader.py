@@ -3,7 +3,9 @@ Download Github issues daily dumps from this page
 "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/" and store them into target directory.
 """
 import argparse
+from datetime import datetime
 import os
+import re
 import tarfile
 from typing import List, Callable, Optional
 
@@ -37,10 +39,12 @@ def download_progress_hook(p_bar: tqdm) -> Callable[[int, int, Optional[int]], N
     return update_to
 
 
-def extract_archive_links(url: str) -> List[str]:
+def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]:
     """
     Extract tar files links from GHTorrent html page to list
     :param url: url of page with daily dumps tars
+    :param start_date: Start date in ISO format
+    :param end_date: End date in ISO format
     :return: list of tar files links
     """
     html_page = urllib.request.urlopen(url)
@@ -48,9 +52,25 @@ def extract_archive_links(url: str) -> List[str]:
     tar_files_links = []
     for link in soup.findAll("a", href=True):
         filename = link.get("href")
-        if filename.endswith("tar.gz"):
+        if filename.endswith("tar.gz") and is_between_dates(filename, start_date, end_date):
             tar_files_links.append(url + filename)
     return tar_files_links
+
+
+def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
+    """
+    Check that current dump date is between start_date and end_date
+    :param tar_filename: Tar filename which contains daily dump date
+    :param start_date: Start date in ISO format
+    :param end_date: End date in ISO format
+    :return: True if tar file date is between start date and end date, else - False
+    """
+    iso_format = "%Y-%m-%d"
+    start_date = datetime.strptime(start_date, iso_format)
+    end_date = datetime.strptime(end_date, iso_format)
+    cur_date = re.search("mongo-dump-(.*).tar.gz", tar_filename).group(1)
+    cur_date = datetime.strptime(cur_date, iso_format)
+    return start_date <= cur_date <= end_date
 
 
 def process_archives(archive_links: List[str], target_dir: str) -> None:
@@ -137,8 +157,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target-dir", required=True,
                         help="Directory to store downloaded tar files")
+    parser.add_argument("--start-date", default="2015-12-01",
+                        help="Starting date(YYYY-MM-DD) from which dumps will be downloaded")
+    parser.add_argument("--end-date", default=str(datetime.today().date()),
+                        help="Ending date(YYYY-MM-DD) from which dumps will be downloaded")
     args = parser.parse_args()
     url = "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/"
-    tar_files_links = extract_archive_links(url)
+    tar_files_links = extract_archive_links(url, args.start_date, args.end_date)
 
     process_archives(tar_files_links, args.target_dir)
