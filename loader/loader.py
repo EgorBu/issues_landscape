@@ -4,6 +4,8 @@ Download Github issues daily dumps from this page
 """
 import argparse
 from datetime import datetime
+from functools import partial
+from multiprocessing import Pool
 import os
 import re
 import tarfile
@@ -81,22 +83,35 @@ def process_archives(archive_links: List[str], target_dir: str) -> None:
     :return: None
     """
     os.makedirs(target_dir, exist_ok=True)
-    for archive_link in tqdm(desc="process archives", iterable=archive_links,
-                             total=len(archive_links)):
-        if not archive_link.endswith("tar.gz"):
-            continue
-        tar_filename = os.path.basename(archive_link)
-        target_loc = os.path.join(target_dir, tar_filename)
+    pool = Pool(processes=7, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
+    process_archive_with_arg = partial(process_archive, target_dir)
+    with tqdm(desc="process archives", total=len(archive_links), position=0) as p_bar:
+        for i, _ in enumerate(pool.imap(process_archive_with_arg, enumerate(archive_links))):
+            p_bar.update()
 
-        with tqdm(desc="downloading %s" % tar_filename) as p_bar:
-            urllib.request.urlretrieve(archive_link, filename=target_loc,
-                                       reporthook=download_progress_hook(p_bar))
 
-        unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
-        is_successful_untar = untar(target_loc, unique_dump_dir)
-        if is_successful_untar:
-            remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
-            tar_directory(unique_dump_dir, os.path.join(target_dir, tar_filename))
+def process_archive(target_dir: str, archive_link: (int, str)) -> None:
+    """
+    Download tar file and untar it to target directory
+    :param target_dir: target directory
+    :param archive_link: tuple with archive link and it position in archive links list
+    :return: None
+    """
+    index, archive_link = archive_link
+    if not archive_link.endswith("tar.gz"):
+        return
+    tar_filename = os.path.basename(archive_link)
+    target_loc = os.path.join(target_dir, tar_filename)
+
+    with tqdm(desc="downloading %s" % tar_filename, position=index + 1) as p_bar:
+        urllib.request.urlretrieve(archive_link, filename=target_loc,
+                                   reporthook=download_progress_hook(p_bar))
+
+    unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
+    is_successful_untar = untar(target_loc, unique_dump_dir)
+    if is_successful_untar:
+        remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
+        tar_directory(unique_dump_dir, os.path.join(target_dir, tar_filename))
 
 
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> bool:
