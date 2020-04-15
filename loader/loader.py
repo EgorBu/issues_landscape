@@ -9,36 +9,11 @@ from multiprocessing import Pool
 import os
 import re
 import tarfile
-from typing import List, Callable, Optional
+from typing import List
 
 from bs4 import BeautifulSoup
+import requests
 from tqdm import tqdm
-import urllib.request
-
-
-def download_progress_hook(p_bar: tqdm) -> Callable[[int, int, Optional[int]], None]:
-    """
-    Wraps tqdm instance
-    :param p_bar: tqdm instance responible for showing download progress
-    :return: function update_to which updates tqdm state
-    """
-    last_block = [0]
-
-    def update_to(block_num: int = 1, block_size: int = 1,
-                  total_size: Optional[int] = None) -> None:
-        """
-        Update tqdm state
-        :param block_num: Number of blocks transferred so far
-        :param block_size: Size of each block
-        :param total_size: Total size (in tqdm units)
-        :return: None
-        """
-        if total_size not in (None, -1):
-            p_bar.total = total_size
-        p_bar.update((block_num - last_block[0]) * block_size)
-        last_block[0] = block_num
-
-    return update_to
 
 
 def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]:
@@ -49,7 +24,7 @@ def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]
     :param end_date: End date in ISO format
     :return: list of tar files links
     """
-    html_page = urllib.request.urlopen(url)
+    html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, features="html.parser")
     tar_files_links = []
     for link in soup.findAll("a", href=True):
@@ -83,7 +58,7 @@ def process_archives(archive_links: List[str], target_dir: str) -> None:
     :return: None
     """
     os.makedirs(target_dir, exist_ok=True)
-    pool = Pool(processes=7, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
+    pool = Pool(processes=8, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
     process_archive_with_arg = partial(process_archive, target_dir)
     with tqdm(desc="process archives", total=len(archive_links), position=0) as p_bar:
         for i, _ in enumerate(pool.imap(process_archive_with_arg, enumerate(archive_links))):
@@ -103,15 +78,39 @@ def process_archive(target_dir: str, archive_link: (int, str)) -> None:
     tar_filename = os.path.basename(archive_link)
     target_loc = os.path.join(target_dir, tar_filename)
 
-    with tqdm(desc="downloading %s" % tar_filename, position=index + 1) as p_bar:
-        urllib.request.urlretrieve(archive_link, filename=target_loc,
-                                   reporthook=download_progress_hook(p_bar))
+    download_file_from_url(archive_link, target_loc, index + 1)
 
     unique_dump_dir = os.path.join(target_dir, tar_filename.replace(".tar.gz", ""))
     is_successful_untar = untar(target_loc, unique_dump_dir)
     if is_successful_untar:
         remove_excess_files(os.path.join(unique_dump_dir, "dump/github"))
         tar_directory(unique_dump_dir, os.path.join(target_dir, tar_filename))
+
+
+def download_file_from_url(file_url, target_loc, file_number) -> None:
+    """
+    Download file from given url to target location
+    :param file_url: Url of file which will be downloaded
+    :param target_loc: target location where downloaded file will be saved
+    :param file_number: number of file
+    :return: None
+    """
+    file_size = int(requests.head(file_url).headers["Content-Length"])
+    if os.path.exists(target_loc):
+        first_byte = os.path.getsize(target_loc)
+    else:
+        first_byte = 0
+    header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
+    p_bar = tqdm(position=file_number, total=file_size, initial=first_byte, unit='B',
+                 unit_scale=True,
+                 desc=file_url.split('/')[-1])
+    req = requests.get(file_url, headers=header, stream=True)
+    with(open(target_loc, 'ab')) as f:
+        for chunk in req.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+                p_bar.update(1024)
+    p_bar.close()
 
 
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> bool:
