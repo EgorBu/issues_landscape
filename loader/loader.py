@@ -101,11 +101,11 @@ def download_file_from_url(file_url, target_loc, file_number) -> None:
     else:
         first_byte = 0
     header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
-    p_bar = tqdm(position=file_number, total=file_size, initial=first_byte, unit='B',
+    p_bar = tqdm(position=file_number, total=file_size, initial=first_byte, unit="B",
                  unit_scale=True,
-                 desc=file_url.split('/')[-1])
+                 desc=file_url.split("/")[-1])
     req = requests.get(file_url, headers=header, stream=True)
-    with(open(target_loc, 'ab')) as f:
+    with(open(target_loc, "ab")) as f:
         for chunk in req.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
