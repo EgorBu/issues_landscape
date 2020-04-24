@@ -36,7 +36,7 @@ def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]
 
 def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
     """
-    Check that current dump date is between start_date and end_date
+    Check that tar date is between start_date and end_date
     :param tar_filename: Tar filename which contains daily dump date
     :param start_date: Start date in ISO format
     :param end_date: End date in ISO format
@@ -45,9 +45,9 @@ def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
     iso_format = "%Y-%m-%d"
     start_date = datetime.strptime(start_date, iso_format)
     end_date = datetime.strptime(end_date, iso_format)
-    cur_date = re.search("mongo-dump-(.*).tar.gz", tar_filename).group(1)
-    cur_date = datetime.strptime(cur_date, iso_format)
-    return start_date <= cur_date <= end_date
+    tar_date = re.search("mongo-dump-(.*).tar.gz", tar_filename).group(1)
+    tar_date = datetime.strptime(tar_date, iso_format)
+    return start_date <= tar_date <= end_date
 
 
 def process_archives(archive_links: List[str], target_dir: str) -> None:
