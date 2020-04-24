@@ -19,10 +19,10 @@ from tqdm import tqdm
 def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]:
     """
     Extract tar files links from GHTorrent html page to list
-    :param url: url of page with daily dumps tars
+    :param url: Url of page with daily dumps tars
     :param start_date: Start date in ISO format
     :param end_date: End date in ISO format
-    :return: list of tar files links
+    :return: List of tar files links
     """
     html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, features="html.parser")
@@ -53,8 +53,8 @@ def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
 def process_archives(archive_links: List[str], target_dir: str) -> None:
     """
     Download tar files and untar them to target directory
-    :param archive_links: list of tar files links
-    :param target_dir: target directory
+    :param archive_links: List of tar files links
+    :param target_dir: Target directory
     :return: None
     """
     os.makedirs(target_dir, exist_ok=True)
@@ -68,8 +68,8 @@ def process_archives(archive_links: List[str], target_dir: str) -> None:
 def process_archive(target_dir: str, archive_link: (int, str)) -> None:
     """
     Download tar file and untar it to target directory
-    :param target_dir: target directory
-    :param archive_link: tuple with archive link and it position in archive links list
+    :param target_dir: Target directory
+    :param archive_link: Tuple with archive link and it position in archive links list
     :return: None
     """
     index, archive_link = archive_link
@@ -91,8 +91,8 @@ def download_file_from_url(file_url, target_loc, file_number) -> None:
     """
     Download file from given url to target location
     :param file_url: Url of file which will be downloaded
-    :param target_loc: target location where downloaded file will be saved
-    :param file_number: number of file
+    :param target_loc: Target location where downloaded file will be saved
+    :param file_number: Number of file
     :return: None
     """
     file_size = int(requests.head(file_url).headers["Content-Length"])
@@ -116,8 +116,8 @@ def download_file_from_url(file_url, target_loc, file_number) -> None:
 def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True) -> bool:
     """
     Untar tarfile to target directory and remove tarfile if it is necessary
-    :param tarfile_path: path of tarfile
-    :param target_directory: directory where files will be extracted
+    :param tarfile_path: Path of tarfile
+    :param target_directory: Directory where files will be extracted
     :param remove_tarfile: True if necessary to remove tarfile, otherwise - False
     :return: True if untar process was successful, else - False
     """
@@ -137,8 +137,8 @@ def untar(tarfile_path: str, target_directory: str, remove_tarfile: bool = True)
 def tar_directory(dir_path: str, tarfile_path: str, remove_directory: bool = True) -> None:
     """
     Tar directory to specific path
-    :param dir_path: path to directory
-    :param tarfile_path: path to created tarfile
+    :param dir_path: Path to directory
+    :param tarfile_path: Path to created tarfile
     :param remove_directory: True if necessary to remove tarred directory, otherwise - False
     :return: None
     """
@@ -153,7 +153,7 @@ def tar_directory(dir_path: str, tarfile_path: str, remove_directory: bool = Tru
 def remove_excess_files(directory: str) -> None:
     """
     Remove all files from directory, except for related to issues
-    :param directory: directory where excess files will be deleted
+    :param directory: Directory where excess files will be deleted
     :return: None
     """
     issue_related_files = {"issues.bson", "issue_comments.bson"}
