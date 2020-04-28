@@ -87,7 +87,7 @@ def process_archive(target_dir: str, archive_link: (int, str)) -> None:
         tar_directory(unique_dump_dir, os.path.join(target_dir, tar_filename))
 
 
-def download_file_from_url(file_url, target_loc, file_number) -> None:
+def download_file_from_url(file_url: str, target_loc: str, file_number: int) -> None:
     """
     Download file from given url to target location
     :param file_url: Url of file which will be downloaded
