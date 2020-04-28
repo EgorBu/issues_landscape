@@ -50,15 +50,16 @@ def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
     return start_date <= tar_date <= end_date
 
 
-def process_archives(archive_links: List[str], target_dir: str) -> None:
+def process_archives(archive_links: List[str], target_dir: str, processes_number: int) -> None:
     """
     Download tar files and untar them to target directory
     :param archive_links: List of tar files links
     :param target_dir: Target directory
+    :param processes_number: Number of processes which will be used in multiprocessing download
     :return: None
     """
     os.makedirs(target_dir, exist_ok=True)
-    pool = Pool(processes=8, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
+    pool = Pool(processes=processes_number, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
     process_archive_with_arg = partial(process_archive, target_dir)
     for _ in tqdm(pool.imap(process_archive_with_arg, enumerate(archive_links)),
                   desc="process archives", total=len(archive_links), position=0):
@@ -175,8 +176,10 @@ def main() -> None:
                         help="Starting date(YYYY-MM-DD) from which dumps will be downloaded")
     parser.add_argument("--end-date", default=str(datetime.today().date()),
                         help="Ending date(YYYY-MM-DD) from which dumps will be downloaded")
+    parser.add_argument("-p", "--proc", default=1,
+                        help="Number of processes for multiprocessing download")
     args = parser.parse_args()
     url = "http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/"
     tar_files_links = extract_archive_links(url, args.start_date, args.end_date)
 
-    process_archives(tar_files_links, args.target_dir)
+    process_archives(tar_files_links, args.target_dir, args.proc)
