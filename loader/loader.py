@@ -60,9 +60,9 @@ def process_archives(archive_links: List[str], target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
     pool = Pool(processes=8, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
     process_archive_with_arg = partial(process_archive, target_dir)
-    with tqdm(desc="process archives", total=len(archive_links), position=0) as p_bar:
-        for i, _ in enumerate(pool.imap(process_archive_with_arg, enumerate(archive_links))):
-            p_bar.update()
+    for _ in tqdm(pool.imap(process_archive_with_arg, enumerate(archive_links)),
+                  desc="process archives", total=len(archive_links), position=0):
+        pass
 
 
 def process_archive(target_dir: str, archive_link: (int, str)) -> None:
