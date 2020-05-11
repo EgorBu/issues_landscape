@@ -18,10 +18,10 @@ def process_restore(start_date: str, end_date: str, remove_untar_files: bool) ->
     """
     tar_dir_path = "./daily_tar_dumps"
     tar_dumps = os.listdir(tar_dir_path)
-    tar_dumps = filter(lambda tar_dump: is_between_dates(tar_dump, start_date, end_date),
-                       tar_dumps)
+    tar_dumps = list(filter(lambda tar_dump: is_between_dates(tar_dump, start_date, end_date),
+                            tar_dumps))
 
-    for tar_dump_name in tqdm(tar_dumps):
+    for tar_dump_name in tqdm(tar_dumps, total=len(tar_dumps)):
         untar_file(os.path.join(tar_dir_path, tar_dump_name))
         untar_dump_name = tar_dump_name.replace(".tar.gz", "")
         is_successful_restore = restore_issue_bson_to_mongo(untar_dump_name)
