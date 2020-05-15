@@ -17,7 +17,7 @@ from tqdm import tqdm
 from utils import is_between_dates
 
 stopwords = list(STOP_WORDS)
-english_lang_model = spacy.load("en_core_web_sm", disable=["tagger", "parser", "ner"])
+english_lang_model = spacy.load("en_core_web_md", disable=["tagger", "parser", "ner"])
 client = pymongo.MongoClient("localhost", 27017)
 issues_landscape_db = client["issues_landscape"]
 
@@ -105,7 +105,8 @@ def tokenize_issue(issue, min_token_number: int) -> Optional[str]:
     tokenized_issue = english_lang_model(issue.lower())
     result_issue = []
     for word in tokenized_issue:
-        if not word.is_punct and not word.like_num and word.lemma_ not in stopwords:
+        if word.is_alpha and word.text in english_lang_model.vocab \
+                and word.lemma_ not in stopwords and word.lemma_ != "-PRON-":
             result_issue.append(word.lemma_)
     if len(result_issue) < min_token_number:
         return None
