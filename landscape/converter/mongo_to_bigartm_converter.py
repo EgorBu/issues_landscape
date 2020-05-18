@@ -51,7 +51,7 @@ def build_corpus_from_dumps(start_date: str, end_date: str, target_dir: str) -> 
         issues.extend(cur_issues)
 
     corpus = [cur_issue.title for cur_issue in issues]
-    vectorizer = CountVectorizer().fit(corpus)
+    vectorizer = CountVectorizer(min_df=5, max_df=0.3).fit(corpus)
     bag_of_words = vectorizer.transform(corpus)
     save_to_docword_file(vectorizer, bag_of_words, issues, target_dir)
     save_to_vocabulary_file(vectorizer.get_feature_names(), target_dir)
@@ -88,7 +88,7 @@ def tokenize_issues(id_and_title_cursor: pymongo.cursor.Cursor) -> List[Tokenize
     """
     issues = []
     for cur_doc in tqdm(id_and_title_cursor, total=id_and_title_cursor.count()):
-        tokenized_issue = tokenize_issue(cur_doc['title'], 5)
+        tokenized_issue = tokenize_issue(cur_doc['title'], 10)
         if tokenized_issue is None:
             continue
         issues.append(TokenizedIssue(cur_doc['id'], tokenized_issue))
