@@ -14,7 +14,7 @@ import spacy
 from spacy.lang.en.stop_words import STOP_WORDS
 from tqdm import tqdm
 
-from utils import is_between_dates
+from landscape.utils import is_between_dates
 
 stopwords = list(STOP_WORDS)
 english_lang_model = spacy.load("en_core_web_md", disable=["tagger", "parser", "ner"])
