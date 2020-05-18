@@ -88,10 +88,10 @@ def tokenize_issues(id_and_title_cursor: pymongo.cursor.Cursor) -> List[Tokenize
     """
     issues = []
     for cur_doc in tqdm(id_and_title_cursor, total=id_and_title_cursor.count()):
-        tokenized_issue = tokenize_issue(cur_doc['title'], 10)
+        tokenized_issue = tokenize_issue(cur_doc["title"], 10)
         if tokenized_issue is None:
             continue
-        issues.append(TokenizedIssue(cur_doc['id'], tokenized_issue))
+        issues.append(TokenizedIssue(cur_doc["id"], tokenized_issue))
     return issues
 
 
