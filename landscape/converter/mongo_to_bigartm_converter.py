@@ -34,37 +34,45 @@ class TokenizedIssue:
         self.title = title
 
 
-def build_corpus_from_dumps(start_date: str, end_date: str, target_dir: str) -> None:
+def build_corpus_from_dumps(start_date: str, end_date: str, target_dir: str,
+                            min_token_number: int, min_df: int, max_df: float) -> None:
     """
     Build corpus of issues from mongodb dumps from start_date to end_date
     :param start_date: Start date from which issues will be used in corpus
     :param end_date: End date to which issues will be used in corpus
     :param target_dir: Directory where vocabulary and docword files will be placed
+    :param min_token_number: Minimal number of token in issue
+    :param min_df: Ignore terms that have a document frequency lower than given value (absolute counts)
+    :param max_df: Ignore terms that have a document frequency higher than given value (proportion of documents)
+    :return: None
     """
     dump_collections = list(filter(lambda collection:
                                    is_between_dates(collection, start_date, end_date,
                                                     filename_pattern="mongo-dump-(.*)_issues"),
                                    issues_landscape_db.collection_names()))
     issues = []
-    for cur_collection in tqdm(dump_collections, total=len(dump_collections)):
-        cur_issues = get_issues_from_collection(issues_landscape_db.get_collection(cur_collection))
+    for collection in tqdm(dump_collections, total=len(dump_collections)):
+        cur_issues = get_issues_from_collection(issues_landscape_db.get_collection(collection),
+                                                min_token_number)
         issues.extend(cur_issues)
 
     corpus = [cur_issue.title for cur_issue in issues]
-    vectorizer = CountVectorizer(min_df=5, max_df=0.3).fit(corpus)
+    vectorizer = CountVectorizer(min_df=min_df, max_df=max_df).fit(corpus)
     bag_of_words = vectorizer.transform(corpus)
     save_to_docword_file(vectorizer, bag_of_words, issues, target_dir)
     save_to_vocabulary_file(vectorizer.get_feature_names(), target_dir)
 
 
-def get_issues_from_collection(collection: pymongo.collection.Collection) -> List[TokenizedIssue]:
+def get_issues_from_collection(collection: pymongo.collection.Collection,
+                               min_token_number: int) -> List[TokenizedIssue]:
     """
     Get issue's ids and titles from given collection
     :param collection: Mongo collection with issues
+    :param min_token_number: Minimal number of token in issue
     :return: List of tokenized issues
     """
     id_and_title_cursor = extract_fields_from_collection(collection, ["id", "title"])
-    return tokenize_issues(id_and_title_cursor)
+    return tokenize_issues(id_and_title_cursor, min_token_number)
 
 
 def extract_fields_from_collection(mongo_collection: pymongo.collection.Collection,
@@ -80,15 +88,17 @@ def extract_fields_from_collection(mongo_collection: pymongo.collection.Collecti
     return extracted_fields_cursor
 
 
-def tokenize_issues(id_and_title_cursor: pymongo.cursor.Cursor) -> List[TokenizedIssue]:
+def tokenize_issues(id_and_title_cursor: pymongo.cursor.Cursor,
+                    min_token_number: int) -> List[TokenizedIssue]:
     """
     Tokenize issues from mongo db cursor
     :param id_and_title_cursor: Cursor which refer to issues stored in mongodb
+    :param min_token_number: Minimal number of token in issue
     :return: List of tokenized issues
     """
     issues = []
     for cur_doc in tqdm(id_and_title_cursor, total=id_and_title_cursor.count()):
-        tokenized_issue = tokenize_issue(cur_doc["title"], 10)
+        tokenized_issue = tokenize_issue(cur_doc["title"], min_token_number)
         if tokenized_issue is None:
             continue
         issues.append(TokenizedIssue(cur_doc["id"], tokenized_issue))
@@ -165,5 +175,14 @@ def main() -> None:
                         help="Start date(YYYY-MM-DD) to convert mongodb files to BigARTM format")
     parser.add_argument("--end-date", default=str(datetime.today().date()),
                         help="End date(YYYY-MM-DD) to convert mongodb files to BigARTM format")
+    parser.add_argument("--min-token-number", default=10,
+                        help="Minimal number of tokens in tokenized issue")
+    parser.add_argument("--min-df", default=5,
+                        help="Ignore terms that have a document frequency strictly "
+                             "lower than the given threshold (absolute counts)")
+    parser.add_argument("--max-df", default=0.5,
+                        help="Ignore terms that have a document frequency strictly "
+                             "higher than the given threshold (proportion of documents) ")
     args = parser.parse_args()
-    build_corpus_from_dumps(args.start_date, args.end_date, args.target_dir)
+    build_corpus_from_dumps(args.start_date, args.end_date, args.target_dir,
+                            args.min_token_number, args.min_df, args.max_df)
