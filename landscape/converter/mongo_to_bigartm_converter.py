@@ -3,6 +3,7 @@ Convert Github daily issues to one of BigARTM format
 (UCI Bag-of-words https://bigartm.readthedocs.io/en/stable/tutorials/datasets.html)
 """
 import argparse
+from collections import namedtuple
 from datetime import datetime
 import os
 from typing import List, Optional
@@ -20,18 +21,7 @@ stopwords = list(STOP_WORDS)
 english_lang_model = spacy.load("en_core_web_md", disable=["tagger", "parser", "ner"])
 client = pymongo.MongoClient("localhost", 27017)
 issues_landscape_db = client["issues_landscape"]
-
-
-class TokenizedIssue:
-    """
-    The TokenizedIssue object contains issue id and title
-    :param issue_id: Issue id
-    :param title: Issue title
-    """
-
-    def __init__(self, issue_id, title):
-        self.id = issue_id
-        self.title = title
+TokenizedIssue = namedtuple("TokenizedIssue", ["id", "title"])
 
 
 def build_corpus_from_dumps(start_date: str, end_date: str, target_dir: str,
@@ -98,6 +88,8 @@ def tokenize_issues(id_and_title_cursor: pymongo.cursor.Cursor,
     """
     issues = []
     for cur_doc in tqdm(id_and_title_cursor, total=id_and_title_cursor.count()):
+        if "title" not in cur_doc:
+            continue
         tokenized_issue = tokenize_issue(cur_doc["title"], min_token_number)
         if tokenized_issue is None:
             continue
