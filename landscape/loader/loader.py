@@ -7,13 +7,14 @@ from datetime import datetime
 from functools import partial
 from multiprocessing import Pool
 import os
-import re
 import tarfile
 from typing import List
 
 from bs4 import BeautifulSoup
 import requests
 from tqdm import tqdm
+
+from landscape.utils import is_between_dates
 
 
 def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]:
@@ -32,22 +33,6 @@ def extract_archive_links(url: str, start_date: str, end_date: str) -> List[str]
         if filename.endswith("tar.gz") and is_between_dates(filename, start_date, end_date):
             tar_files_links.append(url + filename)
     return tar_files_links
-
-
-def is_between_dates(tar_filename: str, start_date: str, end_date: str) -> bool:
-    """
-    Check that tar date is between start_date and end_date
-    :param tar_filename: Tar filename which contains daily dump date
-    :param start_date: Start date in ISO format
-    :param end_date: End date in ISO format
-    :return: True if tar file date is between start date and end date, else - False
-    """
-    iso_format = "%Y-%m-%d"
-    start_date = datetime.strptime(start_date, iso_format)
-    end_date = datetime.strptime(end_date, iso_format)
-    tar_date = re.search("mongo-dump-(.*).tar.gz", tar_filename).group(1)
-    tar_date = datetime.strptime(tar_date, iso_format)
-    return start_date <= tar_date <= end_date
 
 
 def process_archives(archive_links: List[str], target_dir: str, processes_number: int) -> None:
